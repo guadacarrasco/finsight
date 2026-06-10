@@ -8,14 +8,16 @@ const MAX_BYTES = 10 * 1024 * 1024;
 interface Props {
   onFilesAccepted: (files: File[]) => void;
   onFileRejected: (name: string, reason: string) => void;
+  onAttemptStart?: () => void;
 }
 
-export default function FileUploadZone({ onFilesAccepted, onFileRejected }: Props) {
+export default function FileUploadZone({ onFilesAccepted, onFileRejected, onAttemptStart }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const dragCounter = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
 
   function validate(files: FileList | File[]) {
+    onAttemptStart?.();
     const accepted: File[] = [];
     for (const file of Array.from(files)) {
       const ext = file.name.split(".").pop()?.toLowerCase() ?? "";

@@ -1,52 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { AppProvider, useAppContext } from "@/context/AppContext";
+import { useAppContext } from "@/context/AppContext";
 import { uploadDocument } from "@/lib/api";
 import FileUploadZone from "@/components/upload/FileUploadZone";
 import DocumentList from "@/components/upload/DocumentList";
-import ChatInput from "@/components/chat/ChatInput";
-import ChatMessage from "@/components/chat/ChatMessage";
-import type { ChatMessage as ChatMessageType, SourceChunk } from "@/lib/types";
+import ChatInterface from "@/components/chat/ChatInterface";
+import DashboardCards from "@/components/dashboard/DashboardCards";
 
-const MOCK_SOURCES: SourceChunk[] = [
-  {
-    documentId: "d1",
-    documentName: "march_statement.pdf",
-    excerpt: "03/04  WHOLE FOODS MARKET       $87.32",
-    relevanceScore: 0.94,
-  },
-  {
-    documentId: "d1",
-    documentName: "march_statement.pdf",
-    excerpt: "03/11  TRADER JOE'S             $63.15",
-    relevanceScore: 0.91,
-  },
-];
-
-const SEED_MESSAGES: ChatMessageType[] = [
-  {
-    id: "m1",
-    role: "user",
-    content: "How much did I spend on groceries in March?",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "m2",
-    role: "assistant",
-    content: "In March you spent $252.97 on groceries across 3 transactions.",
-    sources: MOCK_SOURCES,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "m3",
-    role: "assistant",
-    content: "", // pending bubble — no content yet
-    createdAt: new Date().toISOString(),
-  },
-];
-
-function ChatTest() {
+function AppShell() {
   const { state, dispatch } = useAppContext();
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
 
@@ -60,41 +22,60 @@ function ChatTest() {
     }
   }
 
+  function handleFileRejected(name: string, reason: string) {
+    setUploadErrors((prev) => [...prev, `${name}: ${reason}`]);
+  }
+
   return (
-    <div className="mx-auto max-w-2xl space-y-8 p-8">
-      <h1 className="text-xl font-semibold text-zinc-800">Component verification</h1>
+    <div className="flex h-screen flex-col bg-zinc-50">
+      {/* Header */}
+      <header className="shrink-0 border-b border-zinc-200 bg-white px-6 py-3">
+        <h1 className="text-lg font-semibold text-zinc-800">
+          Fin<span className="text-blue-600">Sight</span>
+        </h1>
+      </header>
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide">Upload</h2>
-        <FileUploadZone
-          onFilesAccepted={handleFilesAccepted}
-          onFileRejected={(name, reason) => setUploadErrors((p) => [...p, `${name}: ${reason}`])}
-        />
-        {uploadErrors.map((e) => (
-          <p key={e} className="text-sm text-red-600">{e}</p>
-        ))}
-        <DocumentList documents={state.documents} />
-      </section>
-
-      <section className="space-y-2">
-        <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide">Chat messages</h2>
-        <div className="space-y-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
-          {SEED_MESSAGES.map((m) => (
-            <ChatMessage key={m.id} message={m} />
-          ))}
+      <div className="flex flex-1 flex-col overflow-hidden px-6 py-4 gap-4">
+        {/* Dashboard cards */}
+        <div className="shrink-0">
+          <DashboardCards />
         </div>
-        <ChatInput onSend={(q) => console.log("sent:", q)} disabled={false} />
-        <ChatInput onSend={(q) => console.log("sent:", q)} disabled={true} />
-        <p className="text-xs text-zinc-400">Top input: enabled · Bottom input: disabled state</p>
-      </section>
+
+        {/* Two-column main area */}
+        <div className="flex flex-1 gap-4 overflow-hidden">
+          {/* Left: documents */}
+          <aside className="flex w-72 shrink-0 flex-col gap-3 overflow-y-auto">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+              Documents
+            </h2>
+            <FileUploadZone
+              onFilesAccepted={handleFilesAccepted}
+              onFileRejected={handleFileRejected}
+              onAttemptStart={() => setUploadErrors([])}
+            />
+            {uploadErrors.map((e) => (
+              <p key={e} className="text-xs text-red-600">{e}</p>
+            ))}
+            <DocumentList documents={state.documents} />
+          </aside>
+
+          {/* Right: chat */}
+          <main className="flex flex-1 flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white">
+            <div className="shrink-0 border-b border-zinc-100 px-4 py-2">
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                Chat
+              </h2>
+            </div>
+            <div className="flex flex-1 flex-col overflow-hidden">
+              <ChatInterface />
+            </div>
+          </main>
+        </div>
+      </div>
     </div>
   );
 }
 
 export default function Page() {
-  return (
-    <AppProvider>
-      <ChatTest />
-    </AppProvider>
-  );
+  return <AppShell />;
 }
