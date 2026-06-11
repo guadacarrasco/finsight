@@ -1,7 +1,7 @@
-// cache-bust: v2
+// v3 — useCallback refactor
 "use client";
 
-import { useRef, useState, type DragEvent } from "react";
+import { useRef, useState, useCallback } from "react";
 
 const ALLOWED_EXTS = ["pdf", "csv", "png", "jpg", "jpeg"];
 const MAX_BYTES = 6 * 1024 * 1024;
@@ -17,7 +17,7 @@ export default function FileUploadZone({ onFilesAccepted, onFileRejected, onAtte
   const dragCounter = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
 
-  function validate(files: FileList | File[]) {
+  const validate = useCallback((files: FileList | File[]) => {
     onAttemptStart?.();
     const accepted: File[] = [];
     for (const file of Array.from(files)) {
@@ -36,37 +36,37 @@ export default function FileUploadZone({ onFilesAccepted, onFileRejected, onAtte
       accepted.push(file);
     }
     if (accepted.length > 0) onFilesAccepted(accepted);
-  }
+  }, [onFilesAccepted, onFileRejected, onAttemptStart]);
 
-  function onDragEnter(ev: DragEvent) {
+  const onDragEnter = useCallback((ev: React.DragEvent) => {
     ev.preventDefault();
     dragCounter.current += 1;
     if (dragCounter.current === 1) setIsDragging(true);
-  }
+  }, []);
 
-  function onDragLeave(ev: DragEvent) {
+  const onDragLeave = useCallback((ev: React.DragEvent) => {
     ev.preventDefault();
     dragCounter.current -= 1;
     if (dragCounter.current === 0) setIsDragging(false);
-  }
+  }, []);
 
-  function onDragOver(ev: DragEvent) {
+  const onDragOver = useCallback((ev: React.DragEvent) => {
     ev.preventDefault();
-  }
+  }, []);
 
-  function onDrop(ev: DragEvent) {
+  const onDrop = useCallback((ev: React.DragEvent) => {
     ev.preventDefault();
     dragCounter.current = 0;
     setIsDragging(false);
     if (ev.dataTransfer.files.length > 0) validate(ev.dataTransfer.files);
-  }
+  }, [validate]);
 
-  function onChange() {
+  const onChange = useCallback(() => {
     const files = inputRef.current?.files;
     if (!files || files.length === 0) return;
     validate(files);
     if (inputRef.current) inputRef.current.value = "";
-  }
+  }, [validate]);
 
   return (
     <div
