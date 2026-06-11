@@ -1,0 +1,11 @@
+voyageai==0.4.0
+supabase==2.31.0
+PyMuPDF==1.26.5
+pandas==2.3.3
+pytesseract==0.3.13
+tiktoken==0.13.0
+python-dotenv==1.2.1
+fastapi==0.128.8
+uvicorn==0.39.0
+Pillow==11.3.0
+python-multipart==0.0.20

@@ -1,5 +1,33 @@
 # Architecture Decisions
 
+## Day 2
+
+### Embeddings provider: Voyage AI `voyage-finance-2`
+**Decision:** Use Voyage AI `voyage-finance-2` (1024-dim vectors) for all document and query embeddings.
+**Alternative considered:** OpenAI `text-embedding-3-small`.
+**Why:** Anthropic does not offer an embeddings API and recommends Voyage AI as their embedding partner. `voyage-finance-2` is domain-trained on financial documents, giving meaningfully better retrieval for financial terminology (transaction descriptions, account statements, tax language) than a general-purpose model. Using a finance-specific model improves signal-to-noise on queries like "grocery spending" over raw transaction text. Python SDK: `voyageai==0.4.0`; `input_type="document"` for chunks, `input_type="query"` for queries.
+
+### Chunking strategy: token-window with row-boundary awareness for CSV
+**Decision:** 500-token target chunks with 50-token overlap for text/PDF. For CSV: row-boundary-aware chunking — accumulate rows until token budget, never split a row, include header at top of every chunk, back off by ~5 rows for overlap.
+**Alternative considered:** Fixed-character splits; recursive character text splitter (LangChain-style).
+**Why:** Token-window chunking maps directly to model context limits without the double-tokenization overhead of character → token conversion. CSV row-boundary awareness is critical for financial data: a split mid-row would produce a fragment like `-94.37  Groceries` without the merchant name, making it unretriable. Including the column header in every chunk lets the model understand column semantics without relying on chunk position.
+
+### Similarity search: pgvector RPC over application-side filtering
+**Decision:** Implement similarity search as a Supabase RPC function (`match_chunks`) using pgvector's `<=>` cosine distance operator, called from Python via `supabase.rpc()`.
+**Alternative considered:** Fetch all embeddings to Python and compute cosine similarity in NumPy.
+**Why:** pgvector runs the nearest-neighbor search inside Postgres, avoiding a full table scan across the network. The RPC pattern keeps the filter (`WHERE d.status = 'ready'`) in the same query as the vector search, so errored or processing documents are never surfaced. At Day 2 scale (~11 chunks) this is not a performance concern; it establishes the correct architecture for Day 3+ scale.
+
+### IVFFlat index lists=1 for development
+**Decision:** Set `lists = 1` on the IVFFlat index for the current development dataset.
+**Alternative considered:** lists=100 (the common production default).
+**Why:** IVFFlat requires approximately 300× `lists` rows for meaningful probe accuracy. With 11 chunks in the dev dataset, lists=100 would produce worse recall than a sequential scan because all probes land in the same near-empty cell. Rule of thumb: `lists = sqrt(num_rows)` in production. Noted in schema.sql with a comment; revisit when dataset exceeds ~1,000 chunks.
+
+### Voyage AI free tier: 3 RPM limit
+**Decision:** Added 22-second delays between embedding calls in `test_pipeline.py`.
+**Why:** The Voyage AI free tier enforces 3 RPM (requests per minute). Without delays, sequential test queries hit `RateLimitError`. The delay is scoped to `test_pipeline.py` only — the production pipeline and search path are unaffected. Adding a payment method at dashboard.voyageai.com removes the cap; free token allocation (200M tokens for Voyage series 3) still applies after billing is enabled.
+
+---
+
 ## Day 1
 
 ### State management: React Context + useReducer
