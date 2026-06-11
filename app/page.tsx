@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAppContext } from "@/context/AppContext";
 import { uploadDocument } from "@/lib/api";
+import type { FinDocument } from "@/lib/types";
 import FileUploadZone from "@/components/upload/FileUploadZone";
 import DocumentList from "@/components/upload/DocumentList";
 import ChatInterface from "@/components/chat/ChatInterface";
@@ -15,10 +16,27 @@ function AppShell() {
   async function handleFilesAccepted(files: File[]) {
     setUploadErrors([]);
     for (const file of files) {
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      const fileType: FinDocument["fileType"] =
+        ext === "pdf" ? "pdf" : ext === "csv" ? "csv" : "image";
+      const placeholder: FinDocument = {
+        id: `local-${Date.now()}`,
+        filename: file.name,
+        fileType,
+        sizeBytes: file.size,
+        status: "uploading",
+        uploadedAt: new Date().toISOString(),
+      };
+
+      // ADD_DOCUMENT first so the callback can safely update by placeholder.id
+      dispatch({ type: "ADD_DOCUMENT", payload: placeholder });
+
       const doc = await uploadDocument(file, (status) => {
-        dispatch({ type: "UPDATE_DOCUMENT", payload: { id: doc.id, updates: { status } } });
+        dispatch({ type: "UPDATE_DOCUMENT", payload: { id: placeholder.id, updates: { status } } });
       });
-      dispatch({ type: "ADD_DOCUMENT", payload: doc });
+
+      // Merge real server doc (including server-assigned id) over the placeholder
+      dispatch({ type: "UPDATE_DOCUMENT", payload: { id: placeholder.id, updates: doc } });
     }
   }
 
