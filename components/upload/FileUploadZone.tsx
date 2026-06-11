@@ -37,34 +37,34 @@ export default function FileUploadZone({ onFilesAccepted, onFileRejected, onAtte
     if (accepted.length > 0) onFilesAccepted(accepted);
   }
 
-  function onDragEnter(e: DragEvent) {
-    e.preventDefault();
+  function onDragEnter(ev: DragEvent) {
+    ev.preventDefault();
     dragCounter.current += 1;
     if (dragCounter.current === 1) setIsDragging(true);
   }
 
-  function onDragLeave(e: DragEvent) {
-    e.preventDefault();
+  function onDragLeave(ev: DragEvent) {
+    ev.preventDefault();
     dragCounter.current -= 1;
     if (dragCounter.current === 0) setIsDragging(false);
   }
 
-  function onDragOver(e: DragEvent) {
-    e.preventDefault();
+  function onDragOver(ev: DragEvent) {
+    ev.preventDefault();
   }
 
-  function onDrop(e: DragEvent) {
-    e.preventDefault();
+  function onDrop(ev: DragEvent) {
+    ev.preventDefault();
     dragCounter.current = 0;
     setIsDragging(false);
-    if (e.dataTransfer.files.length > 0) validate(e.dataTransfer.files);
+    if (ev.dataTransfer.files.length > 0) validate(ev.dataTransfer.files);
   }
 
-  function onChange(e: ChangeEvent<HTMLInputElement>) {
-    if (e.target.files && e.target.files.length > 0) {
-      validate(e.target.files);
+  function onChange(ev: ChangeEvent<HTMLInputElement>) {
+    if (ev.target.files && ev.target.files.length > 0) {
+      validate(ev.target.files);
       // reset so the same file can be re-selected
-      e.target.value = "";
+      ev.target.value = "";
     }
   }
 
