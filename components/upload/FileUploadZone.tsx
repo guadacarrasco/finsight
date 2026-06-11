@@ -1,6 +1,7 @@
+// cache-bust: v2
 "use client";
 
-import { useRef, useState, type DragEvent, type ChangeEvent } from "react";
+import { useRef, useState, type DragEvent } from "react";
 
 const ALLOWED_EXTS = ["pdf", "csv", "png", "jpg", "jpeg"];
 const MAX_BYTES = 6 * 1024 * 1024;
@@ -60,12 +61,11 @@ export default function FileUploadZone({ onFilesAccepted, onFileRejected, onAtte
     if (ev.dataTransfer.files.length > 0) validate(ev.dataTransfer.files);
   }
 
-  function onChange(ev: ChangeEvent<HTMLInputElement>) {
-    if (ev.target.files && ev.target.files.length > 0) {
-      validate(ev.target.files);
-      // reset so the same file can be re-selected
-      ev.target.value = "";
-    }
+  function onChange() {
+    const files = inputRef.current?.files;
+    if (!files || files.length === 0) return;
+    validate(files);
+    if (inputRef.current) inputRef.current.value = "";
   }
 
   return (
