@@ -19,6 +19,13 @@ export interface QueryResponse {
   sources: SourceChunk[];
 }
 
+export interface StatsResponse {
+  monthlySpend: number | null;
+  income: number | null;
+  topCategory: string | null;
+  transactionCount: number | null;
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";

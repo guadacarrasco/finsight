@@ -53,6 +53,17 @@ def list_documents() -> list[dict]:
     return result.data
 
 
+def get_all_chunks() -> list[str]:
+    result = (
+        get_client()
+        .table("document_chunks")
+        .select("content, documents!inner(status)")
+        .eq("documents.status", "ready")
+        .execute()
+    )
+    return [row["content"] for row in result.data]
+
+
 def similarity_search(query_vector: list[float], k: int = 5) -> list[dict]:
     result = get_client().rpc(
         "match_chunks",

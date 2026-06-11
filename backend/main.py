@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import tempfile
 
@@ -117,6 +118,47 @@ async def get_document(doc_id: str):
         if r["id"] == doc_id:
             return _to_fin_document(r)
     raise HTTPException(status_code=404, detail="document not found")
+
+
+@app.get("/stats")
+async def get_stats():
+    import db
+
+    chunks = db.get_all_chunks()
+    if not chunks:
+        return {
+            "monthlySpend": None,
+            "income": None,
+            "topCategory": None,
+            "transactionCount": None,
+        }
+
+    context = "\n\n---\n\n".join(chunks[:60])  # cap tokens sent to Claude
+    client = _anthropic.Anthropic()
+    msg = client.messages.create(
+        model="claude-sonnet-4-5",
+        max_tokens=512,
+        system=(
+            "You are a financial data extraction assistant. "
+            "Return ONLY a valid JSON object with exactly these keys: "
+            "monthlySpend (total debits/expenses as a positive float, or null), "
+            "income (total credits/income as a positive float, or null), "
+            "topCategory (single string for the most frequent spending category, or null), "
+            "transactionCount (integer count of all transactions, or null). "
+            "No explanation, no markdown, just the JSON object."
+        ),
+        messages=[
+            {
+                "role": "user",
+                "content": f"Financial document excerpts:\n\n{context}\n\nExtract the stats.",
+            }
+        ],
+    )
+    try:
+        stats = json.loads(msg.content[0].text)
+    except (json.JSONDecodeError, IndexError):
+        raise HTTPException(status_code=502, detail="Failed to parse stats from documents")
+    return stats
 
 
 # Lambda entry point

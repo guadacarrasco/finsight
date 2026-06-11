@@ -1,4 +1,4 @@
-import type { FinDocument, QueryResponse } from "@/lib/types";
+import type { FinDocument, QueryResponse, StatsResponse } from "@/lib/types";
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000";
@@ -73,5 +73,16 @@ export async function queryDocuments(question: string): Promise<QueryResponse> {
 export async function listDocuments(): Promise<FinDocument[]> {
   const res = await fetch(`${BACKEND_URL}/documents`);
   if (!res.ok) throw new Error(`List failed: ${res.status}`);
+  return res.json();
+}
+
+// --- getStats ----------------------------------------------------------------
+
+export async function getStats(): Promise<StatsResponse> {
+  const res = await fetch(`${BACKEND_URL}/stats`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail ?? `Stats failed: ${res.status}`);
+  }
   return res.json();
 }
