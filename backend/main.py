@@ -1,31 +1,128 @@
 from __future__ import annotations
 
-from fastapi import FastAPI, File, UploadFile
-from fastapi.responses import JSONResponse
+import os
+import tempfile
 
-app = FastAPI(title="FinSight API", version="0.2.0")
+import anthropic as _anthropic
+from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from mangum import Mangum
+from pydantic import BaseModel
 
-NOT_IMPL = JSONResponse({"error": "not implemented"}, status_code=501)
+app = FastAPI(title="FinSight API", version="0.3.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://finsight--guadaiewdiukow.replit.app",
+        "http://localhost:3000",
+    ],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+class QueryBody(BaseModel):
+    question: str
+    k: int = 5
+
+
+def _to_fin_document(row: dict) -> dict:
+    return {
+        "id": row["id"],
+        "filename": row["filename"],
+        "fileType": row["file_type"],
+        "sizeBytes": row["size_bytes"],
+        "status": row["status"],
+        "uploadedAt": row["uploaded_at"],
+    }
+
+
+def _generate_answer(question: str, sources: list[dict]) -> str:
+    if not sources:
+        return "No relevant documents found to answer this question."
+
+    context = "\n\n".join(
+        f"[{i + 1}] From {s['documentName']}:\n{s['excerpt']}"
+        for i, s in enumerate(sources)
+    )
+
+    client = _anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from env
+    msg = client.messages.create(
+        model="claude-sonnet-4-5",
+        max_tokens=1024,
+        system=(
+            "You are a personal finance assistant. Answer the user's question based "
+            "ONLY on the provided financial document excerpts. Be specific with numbers "
+            "and dates. If the answer is not in the excerpts, say so clearly. "
+            "Do not make up figures."
+        ),
+        messages=[
+            {
+                "role": "user",
+                "content": f"Financial document excerpts:\n\n{context}\n\nQuestion: {question}",
+            }
+        ],
+    )
+    return msg.content[0].text
 
 
 @app.post("/upload")
 async def upload_document(file: UploadFile = File(...)):
-    # Day 3: save file to temp, call pipeline.process_file(), return FinDocument dict
-    return NOT_IMPL
+    from pipeline import process_file
+
+    data = await file.read()
+    original_name = file.filename or "upload"
+    tmp_dir = None
+    tmp_path = None
+    tmp_dir = tempfile.mkdtemp()
+    tmp_path = os.path.join(tmp_dir, original_name)
+    try:
+        with open(tmp_path, "wb") as tmp:
+            tmp.write(data)
+        result = process_file(tmp_path)  # already returns camelCase FinDocument dict
+    except RuntimeError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+        if tmp_dir and os.path.exists(tmp_dir):
+            os.rmdir(tmp_dir)
+    return result
 
 
 @app.post("/query")
-async def query_documents(body: dict):
-    # Day 3: call search.query_documents(body["question"]), call Claude for answer
-    return NOT_IMPL
+async def query_documents(body: QueryBody):
+    from search import query_documents as search_docs
+
+    sources = search_docs(body.question, k=body.k)
+    answer = _generate_answer(body.question, sources)
+    return {"answer": answer, "sources": sources}
 
 
 @app.get("/documents")
 async def list_documents():
-    # Day 3: call db.list_documents(), return list of FinDocument dicts
-    return NOT_IMPL
+    import db
 
+    rows = db.list_documents()
+    return [_to_fin_document(r) for r in rows]
+
+
+@app.get("/documents/{doc_id}")
+async def get_document(doc_id: str):
+    import db
+
+    rows = db.list_documents()
+    for r in rows:
+        if r["id"] == doc_id:
+            return _to_fin_document(r)
+    raise HTTPException(status_code=404, detail="document not found")
+
+
+# Lambda entry point
+handler = Mangum(app, lifespan="off")
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

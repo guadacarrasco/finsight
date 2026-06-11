@@ -1,5 +1,32 @@
 # Architecture Decisions
 
+## Day 3
+
+### Deployment: Lambda container image over ECS Fargate
+**Decision:** Deploy the FastAPI backend as a Lambda container image (512 MB, 5-min timeout) fronted by an API Gateway HTTP API, not ECS Fargate.
+**Alternative considered:** ECS Fargate with an Application Load Balancer.
+**Why:** ECS is architecturally superior for this workload in production — no payload limits, no cold starts, always-warm containers, no 29-second API Gateway timeout. However, ECS requires 2–3 hours of AWS setup on Day 3 (ECR, task definition, cluster, service, ALB, security groups, VPC config). Lambda container image achieves the same Docker-based packaging and scale-to-zero economics with ~30 minutes of setup. The synchronous request pattern (upload → parse → embed → store, all in one call) is a poor fit for Lambda long-term but acceptable for a demo. **Production recommendation: ECS Fargate with presigned S3 URLs for uploads.**
+
+### Docker buildx push requires `--provenance=false` for Lambda ECR compatibility
+**Decision:** Add `--provenance=false` to every `docker buildx build` command when the target is a Lambda container image.
+**Why:** `docker buildx` with its default BuildKit settings emits an OCI image index (manifest list) that includes attestation manifests alongside the actual image manifest. AWS Lambda's container image runtime only accepts Docker Image Manifest V2 Schema 2 — it rejects OCI image indexes with the opaque error "image manifest, config or layer media type is not supported." The `--provenance=false` flag suppresses the attestation manifest and produces a plain single-platform Docker v2 manifest. This is not needed when pushing to ECS/ECR for general use, only when Lambda will pull the image directly.
+
+### IAM policy designed upfront for full deployment sequence
+**Decision:** Before starting the AWS deploy sequence, enumerate every IAM action needed across all steps (IAM role creation, Lambda, API Gateway) and attach a single least-privilege inline policy to the deploy user.
+**Alternative considered:** Add permissions reactively as `AccessDenied` errors appear mid-deploy.
+**Why:** Reactive patching mid-deploy is slow, error-prone, and risks leaving the deployment in a partially-created inconsistent state (e.g., Lambda function created but API Gateway not, requiring manual cleanup before retrying). Designing the policy upfront — scoped to the specific resource ARNs where possible — is faster overall and produces a auditable artifact showing exactly what the deploy user can do.
+
+### API Gateway v2 IAM uses service operation names, not HTTP verbs
+**Decision:** Use `apigatewayv2:CreateApi`, `apigatewayv2:GetApi`, etc. in IAM policies for HTTP API management.
+**Why:** API Gateway has two IAM permission models that are easy to confuse. The original REST API service (`apigateway`) uses HTTP verb-based actions (`apigateway:POST`, `apigateway:GET`) scoped to ARN paths — a non-standard IAM pattern where the action encodes the HTTP method, not a named operation. The HTTP API service (`apigatewayv2`) uses conventional named operation actions (`apigatewayv2:CreateApi`, `apigatewayv2:CreateIntegration`, etc.) consistent with the rest of AWS. Mixing these up produces `AccessDenied` errors that don't match any obvious permission gap.
+
+### Claude model: `claude-sonnet-4-5` for RAG answer generation
+**Decision:** Use `claude-sonnet-4-5` as the generation model in the `/query` endpoint.
+**Alternative considered:** `claude-opus-4-8` (higher quality), `claude-haiku-4-5-20251001` (lower cost).
+**Why:** The RAG context window is small (5 chunks, ~500 tokens each = ~2,500 tokens of context). At this scale, Haiku produces adequate answers but occasionally misses nuance in financial terminology. Opus would improve reasoning on ambiguous queries (e.g., distinguishing "spending" from "transfers") at ~3× the cost per query. Sonnet hits the right cost/quality balance for a demo with moderate query volume. Revisit if query volume grows or answer quality becomes a support issue.
+
+---
+
 ## Day 2
 
 ### Embeddings provider: Voyage AI `voyage-finance-2`

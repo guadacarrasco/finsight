@@ -3,7 +3,7 @@
 import { useRef, useState, type DragEvent, type ChangeEvent } from "react";
 
 const ALLOWED_EXTS = ["pdf", "csv", "png", "jpg", "jpeg"];
-const MAX_BYTES = 10 * 1024 * 1024;
+const MAX_BYTES = 6 * 1024 * 1024;
 
 interface Props {
   onFilesAccepted: (files: File[]) => void;
@@ -28,7 +28,7 @@ export default function FileUploadZone({ onFilesAccepted, onFileRejected, onAtte
       if (file.size > MAX_BYTES) {
         onFileRejected(
           file.name,
-          `File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 10 MB.`
+          `File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 6 MB.`
         );
         continue;
       }
@@ -102,7 +102,7 @@ export default function FileUploadZone({ onFilesAccepted, onFileRejected, onAtte
       <p className="text-sm font-medium">
         {isDragging ? "Drop to upload" : "Drag & drop files here"}
       </p>
-      <p className="text-xs opacity-70">or click to browse · PDF, CSV, PNG, JPG · max 10 MB</p>
+      <p className="text-xs opacity-70">or click to browse · PDF, CSV, PNG, JPG · max 6 MB</p>
       <input
         ref={inputRef}
         type="file"
