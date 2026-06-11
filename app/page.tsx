@@ -53,8 +53,8 @@ function AppShell() {
               onFileRejected={handleFileRejected}
               onAttemptStart={() => setUploadErrors([])}
             />
-            {uploadErrors.map((e) => (
-              <p key={e} className="text-xs text-red-600">{e}</p>
+            {uploadErrors.map((errMsg) => (
+              <p key={errMsg} className="text-xs text-red-600">{errMsg}</p>
             ))}
             <DocumentList documents={state.documents} />
           </aside>
