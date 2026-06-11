@@ -74,7 +74,7 @@ export default function FileUploadZone({ onFilesAccepted, onFileRejected, onAtte
       tabIndex={0}
       aria-label="Upload financial documents"
       onClick={() => inputRef.current?.click()}
-      onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
+      onKeyDown={(evt) => evt.key === "Enter" && inputRef.current?.click()}
       onDragEnter={onDragEnter}
       onDragLeave={onDragLeave}
       onDragOver={onDragOver}
