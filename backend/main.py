@@ -155,7 +155,8 @@ async def get_stats():
         ],
     )
     try:
-        stats = json.loads(msg.content[0].text)
+        raw = msg.content[0].text.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+        stats = json.loads(raw)
     except (json.JSONDecodeError, IndexError):
         raise HTTPException(status_code=502, detail="Failed to parse stats from documents")
     return stats
