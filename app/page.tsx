@@ -62,7 +62,7 @@ function AppShell() {
       <div className="flex flex-1 flex-col overflow-hidden px-6 py-4 gap-4">
         {/* Dashboard cards */}
         <div className="shrink-0">
-          <DashboardCards />
+          <DashboardCards readyCount={state.documents.filter((d) => d.status === "ready").length} />
         </div>
 
         {/* Two-column main area */}

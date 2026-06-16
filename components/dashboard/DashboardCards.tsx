@@ -9,13 +9,14 @@ function fmt(value: number | null, prefix = ""): string {
   return `${prefix}${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
 }
 
-export default function DashboardCards() {
+export default function DashboardCards({ readyCount }: { readyCount: number }) {
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [readyDocs, setReadyDocs] = useState<FinDocument[]>([]);
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
 
     listDocuments()
       .then((docs) => { if (!cancelled) setReadyDocs(docs.filter((d) => d.status === "ready")); })
@@ -46,7 +47,7 @@ export default function DashboardCards() {
 
     load();
     return () => { cancelled = true; };
-  }, []);
+  }, [readyCount]);
 
   const docNote =
     readyDocs.length > 0
