@@ -1,8 +1,18 @@
 FROM --platform=linux/amd64 public.ecr.aws/lambda/python:3.12
 
-# tesseract-ocr binary for image uploads (AL2 needs EPEL; skipped here since
-# the Day 3 demo only uses PDFs/CSVs — pytesseract imports fine without the binary,
-# it only errors at runtime if an image file is actually uploaded)
+RUN microdnf install -y unzip && \
+    curl -sL https://github.com/bweigel/aws-lambda-tesseract-layer/releases/download/v5.4.0/tesseract-al2023-x86.zip \
+      -o /tmp/tesseract.zip && \
+    unzip /tmp/tesseract.zip -d /opt && \
+    curl -sL https://github.com/tesseract-ocr/tessdata_fast/raw/main/eng.traineddata \
+      -o /opt/tesseract/share/tessdata/eng.traineddata && \
+    rm /tmp/tesseract.zip && \
+    microdnf clean all
+
+ENV PATH=/opt/bin:$PATH
+ENV LD_LIBRARY_PATH=/opt/lib:$LD_LIBRARY_PATH
+ENV TESSDATA_PREFIX=/opt/tesseract/share/tessdata
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 

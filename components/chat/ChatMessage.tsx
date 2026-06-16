@@ -1,5 +1,6 @@
 "use client";
 
+import ReactMarkdown from "react-markdown";
 import type { ChatMessage as ChatMessageType } from "@/lib/types";
 import SourcesPanel from "./SourcesPanel";
 
@@ -24,7 +25,9 @@ export default function ChatMessage({ message }: Props) {
     <div className="flex justify-start">
       <div className="max-w-[85%] rounded-2xl rounded-tl-sm border border-zinc-200 bg-white px-4 py-2.5">
         {message.content ? (
-          <p className="text-sm text-zinc-800">{message.content}</p>
+          <div className="text-sm text-zinc-800 prose prose-sm max-w-none">
+            <ReactMarkdown>{message.content}</ReactMarkdown>
+          </div>
         ) : (
           <span className="inline-flex gap-1 text-zinc-400">
             <span className="animate-bounce" style={{ animationDelay: "0ms" }}>·</span>

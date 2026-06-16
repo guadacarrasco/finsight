@@ -38,7 +38,10 @@ def _parse_image(path: str) -> str:
     import pytesseract
     from PIL import Image
 
-    return pytesseract.image_to_string(Image.open(path))
+    img = Image.open(path).convert("L")  # grayscale speeds up OCR
+    if max(img.size) > 1400:
+        img.thumbnail((1400, 1400), Image.LANCZOS)
+    return pytesseract.image_to_string(img, config="--oem 1 --psm 3")
 
 
 if __name__ == "__main__":

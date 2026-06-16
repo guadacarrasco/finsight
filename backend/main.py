@@ -56,7 +56,9 @@ def _generate_answer(question: str, sources: list[dict]) -> str:
             "You are a personal finance assistant. Answer the user's question based "
             "ONLY on the provided financial document excerpts. Be specific with numbers "
             "and dates. If the answer is not in the excerpts, say so clearly. "
-            "Do not make up figures."
+            "Do not make up figures. "
+            "Answer conversationally and concisely. Never use markdown, asterisks, bold, bullet points, or numbered lists. "
+            "Write in plain prose as if speaking to the user directly."
         ),
         messages=[
             {
