@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAppContext } from "@/context/AppContext";
-import { uploadDocument } from "@/lib/api";
+import { listDocuments, uploadDocument } from "@/lib/api";
 import type { FinDocument } from "@/lib/types";
 import FileUploadZone from "@/components/upload/FileUploadZone";
 import DocumentList from "@/components/upload/DocumentList";
@@ -12,6 +12,12 @@ import DashboardCards from "@/components/dashboard/DashboardCards";
 function AppShell() {
   const { state, dispatch } = useAppContext();
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
+
+  useEffect(() => {
+    listDocuments()
+      .then((docs) => docs.forEach((doc) => dispatch({ type: "ADD_DOCUMENT", payload: doc })))
+      .catch(() => {});
+  }, []);
 
   async function handleFilesAccepted(files: File[]) {
     setUploadErrors([]);

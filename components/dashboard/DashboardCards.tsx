@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getStats } from "@/lib/api";
-import type { StatsResponse } from "@/lib/types";
+import { getStats, listDocuments } from "@/lib/api";
+import type { FinDocument, StatsResponse } from "@/lib/types";
 
 function fmt(value: number | null, prefix = ""): string {
   if (value === null) return "—";
@@ -12,54 +12,67 @@ function fmt(value: number | null, prefix = ""): string {
 export default function DashboardCards() {
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [readyDocs, setReadyDocs] = useState<FinDocument[]>([]);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function load(attempt: number) {
-      try {
-        const data = await getStats();
-        if (cancelled) return;
-        const allNull = Object.values(data).every((v) => v === null);
-        if (allNull && attempt === 0) {
-          setTimeout(() => load(1), 3000);
-          return;
-        }
-        setStats(data);
-      } catch (err) {
-        console.error("[DashboardCards] /stats failed:", err);
-        if (!cancelled && attempt === 0) {
-          setTimeout(() => load(1), 3000);
-          return;
+    listDocuments()
+      .then((docs) => { if (!cancelled) setReadyDocs(docs.filter((d) => d.status === "ready")); })
+      .catch(() => {});
+
+    async function load() {
+      const delays = [2000, 4000];
+      for (let attempt = 0; attempt <= delays.length; attempt++) {
+        try {
+          const data = await getStats();
+          if (cancelled) return;
+          const allNull = Object.values(data).every((v) => v === null);
+          if (allNull && attempt < delays.length) {
+            await new Promise((r) => setTimeout(r, delays[attempt]));
+            continue;
+          }
+          setStats(data);
+          break;
+        } catch {
+          if (cancelled) return;
+          if (attempt < delays.length) {
+            await new Promise((r) => setTimeout(r, delays[attempt]));
+          }
         }
       }
       if (!cancelled) setLoading(false);
     }
 
-    load(0);
+    load();
     return () => { cancelled = true; };
   }, []);
+
+  const docNote =
+    readyDocs.length > 0
+      ? `from: ${readyDocs.map((d) => d.filename).join(", ")}`
+      : "from your documents";
 
   const cards = [
     {
       label: "Monthly Spend",
       value: loading ? null : fmt(stats?.monthlySpend ?? null, "$"),
-      note: stats?.monthlySpend != null ? "from your documents" : "no data yet",
+      note: stats?.monthlySpend != null ? docNote : "no data yet",
     },
     {
       label: "Income",
       value: loading ? null : fmt(stats?.income ?? null, "$"),
-      note: stats?.income != null ? "from your documents" : "no data yet",
+      note: stats?.income != null ? docNote : "no data yet",
     },
     {
       label: "Top Category",
       value: loading ? null : (stats?.topCategory ?? "—"),
-      note: stats?.topCategory != null ? "highest spend" : "no data yet",
+      note: stats?.topCategory != null ? `highest spend · ${docNote}` : "no data yet",
     },
     {
       label: "Transactions",
       value: loading ? null : fmt(stats?.transactionCount ?? null),
-      note: stats?.transactionCount != null ? "total found" : "no data yet",
+      note: stats?.transactionCount != null ? `total found · ${docNote}` : "no data yet",
     },
   ];
 
