@@ -14,9 +14,30 @@ export default function DashboardCards() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getStats()
-      .then(setStats)
-      .finally(() => setLoading(false));
+    let cancelled = false;
+
+    async function load(attempt: number) {
+      try {
+        const data = await getStats();
+        if (cancelled) return;
+        const allNull = Object.values(data).every((v) => v === null);
+        if (allNull && attempt === 0) {
+          setTimeout(() => load(1), 3000);
+          return;
+        }
+        setStats(data);
+      } catch (err) {
+        console.error("[DashboardCards] /stats failed:", err);
+        if (!cancelled && attempt === 0) {
+          setTimeout(() => load(1), 3000);
+          return;
+        }
+      }
+      if (!cancelled) setLoading(false);
+    }
+
+    load(0);
+    return () => { cancelled = true; };
   }, []);
 
   const cards = [
