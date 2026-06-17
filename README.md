@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FinSight — AI Personal Finance Assistant
 
-## Getting Started
+**Live app:** https://finsight--guadaiewdiukow.replit.app/
 
-First, run the development server:
+FinSight lets you upload your financial documents (bank statements, transaction CSVs, receipt images) and ask questions about them in plain language. It uses RAG (Retrieval-Augmented Generation) to answer based only on what's in your documents — no hallucination.
+
+---
+
+
+## How to Use
+
+1. **Open the app** at https://finsight--guadaiewdiukow.replit.app/
+2. **Upload a document** — drag and drop or click the upload zone on the left. Supported formats: PDF, CSV, PNG, JPG (max 6 MB). The status badge on the document card will walk through uploading → processing → ready.
+3. **Ask a question** — type in the chat panel on the right once your document is ready. For example:
+   - "What was my total spending last month?"
+   - "What is my largest expense category?"
+   - "How much did I spend on groceries?"
+4. **Check the dashboard** — the cards at the top show aggregated stats (monthly spend, income, top category, transaction count) extracted automatically from your documents.
+
+---
+
+## Claude Code Skill
+
+This project ships with a `/finsight` Claude Code skill that gives Claude full context about the architecture, key files, API endpoints, and deployment — useful when working on the codebase.
+
+**To activate it**, run in the project directory:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+/finsight
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+This loads the skill into Claude's context for the session. It covers the RAG pipeline, all API endpoints with request/response shapes, environment variables, and deploy commands for both frontend (Replit) and backend (AWS Lambda).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

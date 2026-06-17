@@ -57,7 +57,9 @@ def _generate_answer(question: str, sources: list[dict]) -> str:
             "ONLY on the provided financial document excerpts. Be specific with numbers "
             "and dates. If the answer is not in the excerpts, say so clearly. "
             "Do not make up figures. "
-            "Answer conversationally and concisely. Never use markdown, asterisks, bold, bullet points, or numbered lists. "
+            "Internally consider every relevant transaction across all sources before answering, but your final response to the user should be concise — "
+            "state the relevant findings directly without explaining why you included or excluded each one. "
+            "Never use markdown, asterisks, bold, bullet points, or numbered lists. "
             "Write in plain prose as if speaking to the user directly."
         ),
         messages=[
