@@ -19,6 +19,12 @@ FinSight lets you upload your financial documents (bank statements, transaction 
 
 ---
 
+## Prompts
+
+The [`prompts/`](prompts/) folder contains the day-by-day prompts used to build this project with Claude Code.
+
+---
+
 ## Claude Code Skill
 
 This project ships with a `/finsight` Claude Code skill that gives Claude full context about the architecture, key files, API endpoints, and deployment — useful when working on the codebase.
